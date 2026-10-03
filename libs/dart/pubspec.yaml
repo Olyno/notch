@@ -1,0 +1,13 @@
+name: notch
+description: Client SDK for the notch push-notification relay — realtime Android notifications over plain WebSocket with replay-on-reconnect.
+version: 0.1.0
+repository: https://github.com/olyno/notch
+
+environment:
+  sdk: ^3.9.0
+
+# Zero runtime dependencies by design: dart:io + dart:convert only
+# (docs/PROTOCOL.md "Optimization budget").
+
+dev_dependencies:
+  test: ^1.26.0
