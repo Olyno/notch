@@ -12,6 +12,11 @@ use rusqlite::{Connection, params};
 
 pub const DEFAULT_TTL_SECS: i64 = 86_400;
 pub const MAX_PAGE: usize = 200;
+/// A cursor that has not acked within this window is considered dead and
+/// stops pinning the topic's global ack floor (see recompute_floor).
+pub const CLIENT_LIVENESS_SECS: i64 = 2 * 60 * 60;
+/// Cursors dead longer than this are dropped entirely on prune.
+pub const CURSOR_TTL_SECS: i64 = 7 * 24 * 60 * 60;
 
 pub struct Store {
     conn: Mutex<Connection>,
@@ -49,6 +54,7 @@ impl Store {
              );
              CREATE TABLE IF NOT EXISTS client_cursors(
                  topic TEXT NOT NULL, cid TEXT NOT NULL, acked INTEGER NOT NULL,
+                 updated_at INTEGER NOT NULL DEFAULT 0,
                  PRIMARY KEY (topic, cid)
              );",
         )
@@ -155,25 +161,38 @@ impl Store {
     pub fn ack(&self, topic: &str, cid: &str, seq: u64) -> Result<(), String> {
         let mut conn = self.conn.lock();
         let tx = conn.transaction().map_err(|e| e.to_string())?;
+        let now = Self::now();
         tx.execute(
             "INSERT INTO topics(topic, next_seq) VALUES(?1, 1) ON CONFLICT(topic) DO NOTHING",
             params![topic],
         )
         .map_err(|e| e.to_string())?;
         tx.execute(
-            "INSERT INTO client_cursors(topic, cid, acked) VALUES(?1,?2,?3)
-             ON CONFLICT(topic,cid) DO UPDATE SET acked=MAX(acked, excluded.acked)",
-            params![topic, cid, seq as i64],
+            "INSERT INTO client_cursors(topic, cid, acked, updated_at) VALUES(?1,?2,?3,?4)
+             ON CONFLICT(topic,cid) DO UPDATE SET acked=MAX(acked, excluded.acked), updated_at=excluded.updated_at",
+            params![topic, cid, seq as i64, now],
         )
         .map_err(|e| e.to_string())?;
+        Self::recompute_floor(&tx, topic, now).map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    /// Floor = min acked over LIVE cursors (acked recently). A phone that
+    /// died is not allowed to pin retention forever; its replay rights end
+    /// with the message TTL anyway.
+    fn recompute_floor(
+        tx: &rusqlite::Transaction<'_>,
+        topic: &str,
+        now: i64,
+    ) -> rusqlite::Result<()> {
         tx.execute(
             "UPDATE topics SET global_acked = COALESCE((
-                 SELECT MIN(acked) FROM client_cursors WHERE topic=?1
+                 SELECT MIN(acked) FROM client_cursors
+                 WHERE topic=?1 AND updated_at > ?2
              ), 0)",
-            params![topic],
-        )
-        .map_err(|e| e.to_string())?;
-        tx.commit().map_err(|e| e.to_string())?;
+            params![topic, now - CLIENT_LIVENESS_SECS],
+        )?;
         Ok(())
     }
 
@@ -183,6 +202,16 @@ impl Store {
         let mut conn = self.conn.lock();
         let tx = conn.transaction().map_err(|e| e.to_string())?;
         let now = Self::now();
+        // Dead cursors release their pin even without fresh acks: re-age
+        // every floor from LIVE cursors only.
+        tx.execute(
+            "UPDATE topics SET global_acked = COALESCE((
+                 SELECT MIN(acked) FROM client_cursors
+                 WHERE client_cursors.topic = topics.topic AND updated_at > ?1
+             ), 0)",
+            params![now - CLIENT_LIVENESS_SECS],
+        )
+        .map_err(|e| e.to_string())?;
         tx.execute("DELETE FROM messages WHERE expires_at < ?1", params![now])
             .map_err(|e| e.to_string())?;
         tx.execute(
@@ -195,6 +224,13 @@ impl Store {
             "DELETE FROM messages WHERE topic IN (SELECT topic FROM topics)
              AND seq <= (SELECT COALESCE(MAX(seq),0) - ?1 FROM messages m2 WHERE m2.topic = messages.topic)",
             params![cap],
+        )
+        .map_err(|e| e.to_string())?;
+        // GC cursors of devices that never came back (they stopped pinning
+        // the floor once stale — see recompute_floor).
+        tx.execute(
+            "DELETE FROM client_cursors WHERE updated_at < ?1",
+            params![now - CURSOR_TTL_SECS],
         )
         .map_err(|e| e.to_string())?;
         tx.commit().map_err(|e| e.to_string())?;
@@ -287,6 +323,32 @@ mod tests {
             })
             .unwrap();
         assert_eq!(floor, 3); // c2 lags
+    }
+
+    #[test]
+    fn stale_cursor_releases_ack_floor() {
+        let s = store();
+        s.ack("t", "c1", 5).unwrap();
+        s.ack("t", "c2", 3).unwrap();
+        assert_eq!(s.global_acked("t"), 3);
+        // c2 dies: age its cursor past the liveness window
+        s.conn
+            .lock()
+            .execute(
+                "UPDATE client_cursors SET updated_at = 1 WHERE cid='c2'",
+                [],
+            )
+            .unwrap();
+        // the next ack from anyone re-ages the floor over live cursors only
+        s.ack("t", "c1", 8).unwrap();
+        assert_eq!(s.global_acked("t"), 8); // c2 no longer pins it
+        // and prune (which re-ages too) now releases acked-before-8 rows
+        s.conn
+            .lock()
+            .execute("UPDATE messages SET ts = 0", [])
+            .unwrap();
+        s.prune(5000, 60).unwrap();
+        assert_eq!(s.count("t"), 0);
     }
 
     #[test]

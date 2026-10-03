@@ -15,3 +15,7 @@ pubspec.lock
 .vscode/
 *.swp
 .DS_Store
+
+# Vendored reference clones (not part of this repo)
+/gotify/
+/ntfy/
