@@ -110,6 +110,14 @@ impl Publish {
     }
 }
 
+/// Topic ids: [A-Za-z0-9_-]{1,64}; cheap to validate, safe in URLs/SQLite PKs.
+pub fn valid_topic(t: &str) -> bool {
+    !t.is_empty()
+        && t.len() <= 64
+        && t.bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+}
+
 /// Batch frame shared by WS replay and the HTTP poll response: clients
 /// parse exactly one shape for "one or more messages". Live single
 /// messages are sent bare (smallest possible payload).

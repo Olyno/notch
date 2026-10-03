@@ -536,6 +536,8 @@ dependencies = [
 name = "notch-mcp"
 version = "0.1.0"
 dependencies = [
+ "notch-core",
+ "serde",
  "serde_json",
  "tokio",
 ]

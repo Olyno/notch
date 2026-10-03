@@ -31,13 +31,8 @@ impl AppState {
     }
 }
 
-/// Topic ids: [A-Za-z0-9_-]{1,64}; cheap to validate, safe in URLs/SQLite PKs.
-pub fn valid_topic(t: &str) -> bool {
-    !t.is_empty()
-        && t.len() <= 64
-        && t.bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
-}
+/// Topic validation lives in notch-core; re-exported for callers/tests.
+pub use notch_core::valid_topic;
 
 pub fn router(state: AppState) -> Router {
     Router::new()
