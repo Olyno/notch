@@ -1,0 +1,10 @@
+[package]
+name = "notch-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Wire model for notch: messages, tag filters, frames"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
