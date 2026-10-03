@@ -29,7 +29,8 @@ fn main() -> Result<(), String> {
             });
         }
         let listener = TcpListener::bind(&addr).await.map_err(|e| e.to_string())?;
-        println!("notch-relay listening on {addr} (keepalive {KEEPALIVE:?})");
+        let bound = listener.local_addr().map_err(|e| e.to_string())?;
+        println!("notch-relay listening on {bound} (keepalive {KEEPALIVE:?})");
         axum::serve(listener, router(state))
             .await
             .map_err(|e| e.to_string())
