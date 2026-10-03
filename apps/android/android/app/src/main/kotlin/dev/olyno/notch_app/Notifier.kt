@@ -186,8 +186,8 @@ object Notifier {
         "email" -> Notification.CATEGORY_EMAIL
         "event" -> Notification.CATEGORY_EVENT
         "alarm" -> Notification.CATEGORY_ALARM
-        "promo" -> Notification.CATEGORY_PROMOTION
-        "location" -> Notification.CATEGORY_LOCATION
+        "promo" -> Notification.CATEGORY_PROMO
+        "location" -> Notification.CATEGORY_LOCATION_SHARING
         "navigation" -> Notification.CATEGORY_NAVIGATION
         "progress" -> Notification.CATEGORY_PROGRESS
         "social" -> Notification.CATEGORY_SOCIAL
