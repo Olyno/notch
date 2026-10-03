@@ -67,6 +67,10 @@ class NotchClient {
   /// Decided messages, in seq order. Each message appears exactly once.
   Stream<NotchEvent> get events => _events.stream;
 
+  /// Connection state (true = live socket), for UI badges / battery-aware
+  /// scheduling (e.g. WorkManager fallback while false).
+  Stream<bool> get connectionStatus => _status.stream;
+
   /// The subscribe URL currently in use (diagnostics/tests).
   Uri get subscribeUrl => _subscribeUrl();
 
