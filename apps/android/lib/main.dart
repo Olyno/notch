@@ -11,6 +11,13 @@ import 'package:notch/notch.dart';
 import 'config.dart';
 import 'notify_bridge.dart';
 
+// The service engine runs `serviceMain` by name (NotchService.kt); this
+// import puts the library into the snapshot's import graph — an unimported
+// library is never compiled in at all. The `vm:entry-point` pragma on the
+// function is what keeps it through release AOT tree-shaking.
+// ignore: unused_import
+import 'service_entry.dart';
+
 void main() => runApp(const NotchApp());
 
 class NotchApp extends StatelessWidget {

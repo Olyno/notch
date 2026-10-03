@@ -52,6 +52,9 @@ class NotchService : Service() {
         e.dartExecutor.executeDartEntrypoint(
             DartExecutor.DartEntrypoint(
                 FlutterInjector.instance().flutterLoader().findAppBundlePath(),
+                // 2-arg ctor would read "serviceMain" as a *library* with
+                // function "main" — use the explicit library + function form.
+                "package:notch_app/service_entry.dart",
                 "serviceMain",
             )
         )
