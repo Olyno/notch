@@ -11,6 +11,7 @@ import androidx.core.app.ActivityCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 /**
  * UI bridge (`notch.ui` channel): the settings screen commands the service
@@ -24,6 +25,13 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        // Headless/kiosk + device tests: `am start --es notch.autostart 1`
+        // begins listening without a tap (config must already exist).
+        if (intent?.getStringExtra("notch.autostart") == "1" &&
+            File(applicationContext.filesDir, "config.json").exists()
+        ) {
+            NotchService.start(this)
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "notch.ui")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
