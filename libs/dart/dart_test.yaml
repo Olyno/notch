@@ -1,0 +1,4 @@
+# 'xlang' tests spawn the real Rust relay + notch-mcp binaries; they skip
+# themselves when the release binaries are absent (see test header).
+tags:
+  xlang:
