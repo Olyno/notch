@@ -11,12 +11,13 @@ Inspired by [gotify](https://github.com/gotify/server) and
   with a cursor and the relay replays exactly what was missed. Nothing is ever
   lost while the app is alive; the relay keeps messages until acknowledged.
 - **Device-specific control** — the Dart library models Android 13+ primitives
-  (channels, categories, importance, silent/background tags, `onlyAlertOnce`,
-  timeouts, dedup keys). Rules live client-side: *"alert when a player joins,
-  ignore when a player leaves"* is a filter on message tags, evaluated before
-  the notification is ever built.
-- **Size** — single small Rust binary (relay + MCP server), no web UI, no auth
-  system, no attachments, no email/SMS. One job, done well.
+  (channels, categories, importance, silent delivery, auto-dismiss timeouts,
+  dedup keys). Rules live client-side: *"alert when a player joins, ignore
+  when a player leaves"* is a filter on message tags, evaluated before the
+  notification is ever built — and opt-in server-side tag filters make the
+  ignored messages cost zero bytes on the wire.
+- **Size** — two tiny Rust binaries (relay 3.9 MB, MCP server 0.9 MB), no web
+  UI, no auth, no attachments, no email/SMS. One job, done well.
 
 ## Layout
 
@@ -49,6 +50,22 @@ cargo run -p notch-mcp -- http://localhost:8899
 
 The Android app is in `apps/android` (`flutter run`). It subscribes to
 `ws://<relay>/ws/alerts` and applies the filter rules configured in-app.
+
+## Tests
+
+```sh
+cd rust && cargo test --workspace        # relay + mcp: unit + ws e2e
+cd libs/dart && dart test                # SDK: model/rules/backoff/client
+./scripts/xtest.sh                       # cross-language: real binaries,
+                                         # replay across a relay outage
+cd apps/android && flutter test          # settings UI
+cd apps/android && flutter run           # needs a device (see below)
+```
+
+The xtest script builds the release binaries first; the cross-language suite
+proves the two independent implementations agree on the wire: MCP agent ->
+relay -> Dart client, including dedup, cursor persistence, server-side tag
+filters and replay after the relay dies and restarts on the same origin.
 
 ## Design notes
 

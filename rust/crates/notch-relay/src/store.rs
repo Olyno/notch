@@ -135,17 +135,6 @@ impl Store {
         })
     }
 
-    /// Total messages strictly after `after` on a topic (long-poll hint).
-    pub fn count_after(&self, topic: &str, after: u64) -> Result<u64, String> {
-        let conn = self.conn.lock();
-        conn.query_row(
-            "SELECT COUNT(*) FROM messages WHERE topic=?1 AND seq>?2",
-            params![topic, after as i64],
-            |r| r.get::<_, i64>(0).map(|v| v as u64),
-        )
-        .map_err(|e| e.to_string())
-    }
-
     /// The topic's global ack floor (min over registered client cursors).
     pub fn global_acked(&self, topic: &str) -> i64 {
         let conn = self.conn.lock();
@@ -298,15 +287,6 @@ mod tests {
         let p = s.since("t", 5, 200).unwrap();
         assert!(p.messages.is_empty());
         assert_eq!(p.last_scanned, 5);
-    }
-
-    #[test]
-    fn count_after_tracks() {
-        let s = store();
-        assert_eq!(s.count_after("ghost", 0).unwrap(), 0);
-        s.publish_simple("t", "x", &[]);
-        assert_eq!(s.count_after("t", 0).unwrap(), 1);
-        assert_eq!(s.count_after("t", 1).unwrap(), 0);
     }
 
     #[test]
