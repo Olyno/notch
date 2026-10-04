@@ -1,0 +1,88 @@
+name: Release binaries
+
+# Runs only when a GitHub Release is created/published — never on pushes.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: mlugg/setup-zig@v2
+      - run: cargo install cargo-zigbuild --locked
+      - name: Build (static, bundled SQLite)
+        working-directory: rust
+        run: cargo zigbuild --release --target ${{ matrix.target }}
+      - name: Package
+        working-directory: rust
+        run: |
+          set -eu
+          arch=${{ matrix.target }}
+          arch=${arch%%-*}                       # x86_64 / aarch64
+          dist=notch-linux-$arch
+          mkdir -p $dist
+          cp target/${{ matrix.target }}/release/notch-relay $dist/
+          cp target/${{ matrix.target }}/release/notch-mcp  $dist/
+          cp ../LICENSE ../README.md ../docs/PROTOCOL.md $dist/
+          tar czf ../notch-linux-$arch.tar.gz $dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: notch-linux-*.tar.gz
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+      - name: Build
+        working-directory: rust
+        run: cargo build --release --target aarch64-apple-darwin
+      - name: Package
+        working-directory: rust
+        run: |
+          set -eu
+          dist=notch-macos-aarch64
+          mkdir -p $dist
+          cp target/aarch64-apple-darwin/release/notch-relay $dist/
+          cp target/aarch64-apple-darwin/release/notch-mcp  $dist/
+          cp ../LICENSE ../README.md ../docs/PROTOCOL.md $dist/
+          tar czf ../notch-macos-aarch64.tar.gz $dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: notch-macos-aarch64.tar.gz
+
+  apk:
+    # Debug APK (self-signed by the debug key): install over USB/sideload.
+    # A Play-ready artifact needs real signing keys as repository secrets.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build APK
+        working-directory: apps/android
+        run: |
+          flutter pub get
+          flutter build apk --split-per-abi
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: apps/android/build/app/outputs/flutter-apk/app-*-release.apk

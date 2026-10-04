@@ -1,0 +1,53 @@
+name: CI
+
+# Only PRs and pushes to main: no pushes to feature branches, no cron.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - run: cargo build --release
+      - run: ./target/release/notch-relay --help || true
+
+  dart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: SDK library tests
+        working-directory: libs/dart
+        run: |
+          flutter pub get
+          dart test
+      - name: Android app analyze + tests
+        working-directory: apps/android
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test

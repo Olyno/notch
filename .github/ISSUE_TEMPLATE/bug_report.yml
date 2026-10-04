@@ -1,0 +1,57 @@
+name: Bug report
+description: Something misbehaves — a message lost, a tap does nothing, the relay crashes…
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Notch = relay (`notch-relay`), MCP server (`notch-mcp`), Dart client
+        (`notch`), Android app. Say which part you saw fail.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [relay, mcp server, dart client library, android app, protocol/docs]
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the topic, the published JSON (if any), and what the phone did or didn't do.
+      placeholder: |
+        Published {"title":"…","url":"https://…"} to topic "game",
+        notification appeared but the tap opened Notch instead of the browser.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      render: shell
+      placeholder: |
+        1. ./notch-relay
+        2. adb reverse tcp:8899 tcp:8899
+        3. curl -X POST 127.0.0.1:8899/t/game -d '{"title":"…"}'
+  - type: input
+    id: relay-version
+    attributes:
+      label: Relay version / commit
+      description: notch-relay binary version or git SHA, and OS/arch (e.g. v0.1.0 x86_64-linux)
+  - type: input
+    id: device
+    attributes:
+      label: Phone / Android version
+      description: Only for android-app issues (e.g. Pixel 6, Android 14)
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Relay stderr and/or `adb logcat -d -s flutter:*` — automatically formatted as code.
+      render: shell

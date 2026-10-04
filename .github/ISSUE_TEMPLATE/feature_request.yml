@@ -1,0 +1,36 @@
+name: Feature request
+description: An improvement — new wire field, client behaviour, packaging…
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Notch's design rules: tiny footprint, no auth/no web UI, the relay
+        stays stateless-per-message (SQLite only), rules stay client-side.
+        Requests that fight these need a strong "why".
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The use case, not the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: How should it work?
+      description: Wire format additions (docs/PROTOCOL.md), new client options, packaging…
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component it touches
+      options: [relay, mcp server, dart client library, android app, protocol/docs, CI/packaging]
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Workarounds you tried
+      description: Existing fields (tags, dedup_key, rules, url…) that almost cover it.
