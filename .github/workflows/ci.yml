@@ -29,7 +29,8 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
       - run: cargo build --release
-      - run: ./target/release/notch-relay --help || true
+      # relay has no --help: it binds and runs; 3s proves it boots, 124 = ok
+      - run: timeout 3 ./target/release/notch-relay || [ $? -eq 124 ]
 
   dart:
     runs-on: ubuntu-latest

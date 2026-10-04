@@ -40,8 +40,8 @@ Future<void> serviceMain() async {
       await Notifier.show(event);
     } catch (e) {
       // The notifier dying must never take the socket down — but it must
-      // not die silently either.
-      print('notch: notify failed: $e');
+      // not die silently either. debugPrint keeps logcat as the sink.
+      debugPrint('notch: notify failed: $e');
     }
   });
 

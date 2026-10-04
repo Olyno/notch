@@ -164,9 +164,10 @@ impl Filter {
                 .collect()
         };
         Filter {
-            all: get("all").map(&split).unwrap_or_default(),
-            any: get("any").map(&split).unwrap_or_default(),
-            none: get("none").map(&split).unwrap_or_default(),
+            // split is a non-capturing (Copy) closure: pass by value.
+            all: get("all").map(split).unwrap_or_default(),
+            any: get("any").map(split).unwrap_or_default(),
+            none: get("none").map(split).unwrap_or_default(),
         }
     }
 }

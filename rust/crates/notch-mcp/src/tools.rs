@@ -112,10 +112,8 @@ async fn send(relay: &Relay, args: &Value) -> Result<Value, (i32, String)> {
         }
         msg["priority"] = json!(p);
     }
-    for key in ["silent"] {
-        if let Some(v) = args.get(key).and_then(Value::as_bool) {
-            msg[key] = json!(v);
-        }
+    if let Some(v) = args.get("silent").and_then(Value::as_bool) {
+        msg["silent"] = json!(v);
     }
     for key in ["timeout_ms", "ttl"] {
         if let Some(v) = args.get(key).and_then(Value::as_u64) {
