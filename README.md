@@ -83,6 +83,10 @@ MCP target `http://localhost:8899` (also settable via `NOTCH_RELAY` or the
 first CLI argument). Open port 8899 (or your reverse proxy) so the phone can
 reach the relay.
 
+(No `curl | sh` installer: the repo is private, so every asset download
+needs a GitHub token — the one-liner can't work. Revisit if this goes
+public.)
+
 **Agent (MCP) config** — point any MCP client at the binary:
 
 ```json
@@ -101,20 +105,22 @@ pick the topic, start the listener. Release APKs are signed with Flutter's
 debug key — fine for sideload; a Play/production signing key is a repo secret
 TODO.
 
-## Quick start
+## From source (development)
+
+Only for hacking on notch itself — to just run it, use the release binaries
+above. Needs Rust; nothing installs system-wide:
 
 ```sh
-# relay (stores in ./notch.db, listens on :8899)
-cargo run -p notch-relay
+cd rust
+cargo run -p notch-relay          # :8899, stores ./notch.db
 
 # send a test message
 curl -X POST localhost:8899/t/alerts \
   -H 'content-type: application/json' \
   -d '{"title":"player joined","tags":["join"],"priority":"high"}'
 
-# agent integration: point your MCP client at notch-mcp (stdio);
-# it forwards to the relay over HTTP.
-cargo run -p notch-mcp -- http://localhost:8899
+# agent side: register cargo run -p notch-mcp -- http://localhost:8899
+# as the MCP client's command; the client spawns it, you don't.
 ```
 
 The Android app is in `apps/android` (`flutter run`). It subscribes to
