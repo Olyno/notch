@@ -41,10 +41,11 @@ jobs:
         with:
           channel: stable
           cache: true
-      - name: SDK library tests
+      - name: SDK library analyze + tests
         working-directory: libs/dart
         run: |
           flutter pub get
+          dart analyze
           dart test
       - name: Android app analyze + tests
         working-directory: apps/android
