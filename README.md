@@ -39,10 +39,19 @@ Grab the latest [release](releases). Each archive contains both
 daemons (`notch-relay`, `notch-mcp`) plus LICENSE/PROTOCOL; Linux builds are
 fully static (musl) — download and run, no dependencies:
 
+**Always run: the relay. That's the whole server.** Everything else is
+optional and hangs off it:
+
 ```sh
 tar xzf notch-linux-x86_64.tar.gz && cd notch-linux-x86_64
 ./notch-relay                     # :8899, stores ./notch.db — or run as a service below
-./notch-mcp http://127.0.0.1:8899 # stdio MCP server for your agent
+
+# NOTCH-MCP IS NOT A DAEMON — never start it yourself. Your agent/IDE spawns
+# it as a child process when it loads the notch tools, speaks MCP to it over
+# its stdin/stdout (stdio), and notch-mcp turns each tool call into an HTTP
+# POST to the relay. Without an MCP client, you don't need it at all:
+curl -X POST 127.0.0.1:8899/t/alerts \
+  -H 'content-type: application/json' -d '{"title":"hi"}'   # plain HTTP works directly
 ```
 
 **Run the relay as a service** (`/etc/systemd/system/notch-relay.service`):
