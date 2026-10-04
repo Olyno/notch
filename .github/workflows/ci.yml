@@ -12,7 +12,9 @@ concurrency:
 
 jobs:
   rust:
-    runs-on: ubuntu-latest
+    # Pinned while ubuntu-latest still means 24: keeps CI == release env
+    # through the Ubuntu 26 migration (Oct 19); move both together after.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -33,7 +35,7 @@ jobs:
       - run: timeout 3 ./target/release/notch-relay || [ $? -eq 124 ]
 
   dart:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7

@@ -33,6 +33,65 @@ apps/android/       Flutter app: foreground service + native notifications
 docs/PROTOCOL.md    wire format (the source of truth)
 ```
 
+## Install from binaries (no toolchain needed)
+
+Grab the latest [release](releases). Each archive contains both
+daemons (`notch-relay`, `notch-mcp`) plus LICENSE/PROTOCOL; Linux builds are
+fully static (musl) — download and run, no dependencies:
+
+```sh
+tar xzf notch-linux-x86_64.tar.gz && cd notch-linux-x86_64
+./notch-relay                     # :8899, stores ./notch.db — or run as a service below
+./notch-mcp http://127.0.0.1:8899 # stdio MCP server for your agent
+```
+
+**Run the relay as a service** (`/etc/systemd/system/notch-relay.service`):
+
+```ini
+[Unit]
+Description=notch relay
+After=network.target
+
+[Service]
+ExecStart=/opt/notch/notch-relay
+Environment=NOTCH_ADDR=0.0.0.0:8899
+Environment=NOTCH_DB=/var/lib/notch/notch.db
+DynamicUser=yes
+StateDirectory=notch
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```sh
+sudo mkdir -p /opt/notch && sudo cp notch-relay notch-mcp /opt/notch/
+sudo systemctl enable --now notch-relay
+```
+
+Defaults if env is unset: `NOTCH_ADDR=0.0.0.0:8899`, `NOTCH_DB=./notch.db`,
+MCP target `http://localhost:8899` (also settable via `NOTCH_RELAY` or the
+first CLI argument). Open port 8899 (or your reverse proxy) so the phone can
+reach the relay.
+
+**Agent (MCP) config** — point any MCP client at the binary:
+
+```json
+{
+  "mcpServers": {
+    "notch": { "command": "/opt/notch/notch-mcp", "args": ["http://127.0.0.1:8899"] }
+  }
+}
+```
+
+**Phone** — install `app-arm64-v8a-release.apk` (modern Pixels/phones) or
+`app-armeabi-v7a-release.apk` (older 32-bit) from the release page — via
+`adb install app-arm64-v8a-release.apk` or download-and-tap (allow "unknown
+apps" once). Open the app, set the relay to `ws://<your-server>:8899/ws/<topic>`,
+pick the topic, start the listener. Release APKs are signed with Flutter's
+debug key — fine for sideload; a Play/production signing key is a repo secret
+TODO.
+
 ## Quick start
 
 ```sh
