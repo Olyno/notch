@@ -38,8 +38,10 @@ Future<void> serviceMain() async {
   client.events.listen((event) async {
     try {
       await Notifier.show(event);
-    } catch (_) {
-      // The notifier dying must never take the socket down.
+    } catch (e) {
+      // The notifier dying must never take the socket down — but it must
+      // not die silently either.
+      print('notch: notify failed: $e');
     }
   });
 

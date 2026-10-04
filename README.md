@@ -12,7 +12,8 @@ Inspired by [gotify](https://github.com/gotify/server) and
   lost while the app is alive; the relay keeps messages until acknowledged.
 - **Device-specific control** — the Dart library models Android 13+ primitives
   (channels, categories, importance, silent delivery, auto-dismiss timeouts,
-  dedup keys). Rules live client-side: *"alert when a player joins, ignore
+  dedup keys, tap deep links to the sender's own app). Rules live client-side:
+  *"alert when a player joins, ignore
   when a player leaves"* is a filter on message tags, evaluated before the
   notification is ever built — and opt-in server-side tag filters make the
   ignored messages cost zero bytes on the wire.

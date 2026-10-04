@@ -30,7 +30,8 @@ pub fn tools_list() -> Value {
                         "category": { "type": "string", "maxLength": 32, "description": "Android notification category, e.g. 'msg', 'call', 'event', 'workout', 'navigation'." },
                         "icon": { "type": "string", "maxLength": 32, "description": "Logical icon name: info, warn, error, check, message, person, game, timer, battery, network, lock." },
                         "timeout_ms": { "type": "integer", "minimum": 0, "maximum": 86400000, "description": "Auto-dismiss after this many ms; 0 = sticky until tapped. Default: 0." },
-                        "ttl": { "type": "integer", "minimum": 1, "maximum": 604800, "description": "Seconds the relay keeps the message for offline phones. Default: 86400." }
+                        "ttl": { "type": "integer", "minimum": 1, "maximum": 604800, "description": "Seconds the relay keeps the message for offline phones. Default: 86400." },
+                        "url": { "type": "string", "maxLength": 2048, "pattern": "^[a-zA-Z][a-zA-Z0-9+.-]*:.*", "description": "Deep link opened when the user taps the notification: http(s) opens in the matching app or browser; a custom scheme (e.g. 'myapp://path') launches the app that registered it. Empty/absent opens the Notch app itself." }
                     },
                     "required": ["topic", "title"]
                 },
@@ -97,7 +98,7 @@ async fn send(relay: &Relay, args: &Value) -> Result<Value, (i32, String)> {
         .and_then(Value::as_str)
         .ok_or_else(|| bad("title required"))?;
     let mut msg = json!({ "title": title });
-    for key in ["body", "category", "icon", "dedup_key", "channel"] {
+    for key in ["body", "category", "icon", "dedup_key", "channel", "url"] {
         if let Some(v) = args.get(key).and_then(Value::as_str) {
             msg[key] = json!(v);
         }

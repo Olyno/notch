@@ -23,6 +23,7 @@ sync with them.
   "timeout_ms": 60000,          // client auto-dismiss, 0 = sticky until tapped
   "dedup_key": "lobby",         // same key replaces, not stacks
   "channel": "game",            // Android channel override (default: topic)
+  "url": "myapp://lobby/7",     // deep link opened on tap (empty -> Notch app)
   "ts": 1727900000              // unix seconds, relay-assigned
 }
 ```
@@ -113,7 +114,7 @@ supports both protocol eras:
 Tools:
 
 - `send_notification { topic, title, body?, tags?, priority?, category?,
-  silent?, dedup_key?, channel?, icon?, timeout_ms?, ttl? }`
+  silent?, dedup_key?, channel?, icon?, timeout_ms?, ttl?, url? }`
   → `structuredContent { seq }`
 - `poll_messages { topic, since?, any?, none?, wait? }`
   → `structuredContent { messages, last_seq }`

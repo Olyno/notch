@@ -37,6 +37,7 @@ class Message {
     this.timeoutMs = 0,
     this.dedupKey = '',
     this.channel = '',
+    this.url = '',
     this.ts = 0,
   });
 
@@ -54,6 +55,7 @@ class Message {
   final int timeoutMs;
   final String dedupKey;
   final String channel;
+  final String url;
   final int ts;
 
   factory Message.fromJson(Map<String, Object?> j) => Message(
@@ -71,6 +73,7 @@ class Message {
     timeoutMs: (j['timeout_ms'] as num?)?.toInt() ?? 0,
     dedupKey: j['dedup_key'] as String? ?? '',
     channel: j['channel'] as String? ?? '',
+    url: j['url'] as String? ?? '',
     ts: (j['ts'] as num?)?.toInt() ?? 0,
   );
 
@@ -89,6 +92,7 @@ class Message {
     if (timeoutMs != 0) 'timeout_ms': timeoutMs,
     if (dedupKey.isNotEmpty) 'dedup_key': dedupKey,
     if (channel.isNotEmpty) 'channel': channel,
+    if (url.isNotEmpty) 'url': url,
     'ts': ts,
   };
 

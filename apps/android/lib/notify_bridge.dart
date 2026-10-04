@@ -45,6 +45,7 @@ class Notifier {
       'icon': m.icon,
       'dedupKey': m.dedupKey,
       'timeoutMs': m.timeoutMs,
+      if (m.url.isNotEmpty) 'url': m.url,
     });
   }
 

@@ -55,6 +55,7 @@ object Notifier {
         val icon = a["icon"] as? String
         val dedupKey = a["dedupKey"] as? String
         val timeoutMs = (a["timeoutMs"] as? Number)?.toLong() ?: 0L
+        val url = a["url"] as? String
 
         val channelId = ensureChannel(ctx, channelKey, silent, priority)
 
@@ -70,7 +71,7 @@ object Notifier {
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setAutoCancel(true)
             .setGroup(GROUP)
-            .setContentIntent(openAppIntent(ctx, id))
+            .setContentIntent(tapIntent(ctx, url, id))
 
         when (priority) {
             "min" -> builder.priority = NotificationCompat.PRIORITY_MIN
@@ -87,7 +88,7 @@ object Notifier {
         }
         // heads-up for high/max unless silent
         if (!silent && (priority == "high" || priority == "max")) {
-            builder.setFullScreenIntent(openAppIntent(ctx, id), true)
+            builder.setFullScreenIntent(tapIntent(ctx, url, id), true)
         }
         if (timeoutMs > 0) {
             builder.setTimeoutAfter(timeoutMs) // API 24+; harmless earlier
@@ -170,6 +171,35 @@ object Notifier {
             ctx, id, i,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
+
+    /**
+     * Tap action: a publisher `url` opens its deep link — resolved NOW via
+     * PackageManager and pinned to the winning package, so the PendingIntent
+     * is explicit + immutable (no hijack window, no crash at fire time).
+     * http/https with no app registered opens the browser chooser; a scheme
+     * nobody handles falls back to opening the Notch app itself.
+     */
+    private fun tapIntent(ctx: Context, url: String?, id: Int): PendingIntent {
+        val view = url?.takeIf { it.isNotBlank() }?.let { u ->
+            runCatching { Intent(Intent.ACTION_VIEW, Uri.parse(u)) }.getOrNull()
+        } ?: return openAppIntent(ctx, id)
+        view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val target = ctx.packageManager.resolveActivity(
+            view, PackageManager.MATCH_DEFAULT_ONLY
+        )?.activityInfo
+        return when {
+            target != null -> {
+                view.setPackage(target.packageName)
+                PendingIntent.getActivity(ctx, id, view,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            }
+            view.data?.scheme == "http" || view.data?.scheme == "https" -> PendingIntent.getActivity(
+                ctx, id, Intent.createChooser(view, null)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            else -> openAppIntent(ctx, id)
+        }
     }
 
     private fun areNotificationsEnabled(ctx: Context): Boolean {

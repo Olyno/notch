@@ -240,6 +240,7 @@ impl Store {
             timeout_ms: 0,
             dedup_key: String::new(),
             channel: String::new(),
+            url: String::new(),
         };
         self.publish(topic, &p).unwrap()
     }
@@ -364,6 +365,7 @@ mod tests {
             timeout_ms: 0,
             dedup_key: String::new(),
             channel: String::new(),
+            url: String::new(),
         };
         s.publish("t", &p).unwrap();
         p.ttl = 86_400;

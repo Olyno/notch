@@ -56,6 +56,11 @@ pub struct Message {
     /// Android channel override; empty -> channel derived from topic.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub channel: String,
+    /// Deep link opened when the user taps the notification (http/https or a
+    /// custom scheme handled by the sender's app). Empty -> tapping opens the
+    /// Notch app itself.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub url: String,
     #[serde(default)]
     pub ts: i64,
 }
@@ -85,6 +90,8 @@ pub struct Publish {
     pub dedup_key: String,
     #[serde(default)]
     pub channel: String,
+    #[serde(default)]
+    pub url: String,
 }
 
 impl Publish {
@@ -105,6 +112,7 @@ impl Publish {
             timeout_ms: self.timeout_ms,
             dedup_key: self.dedup_key,
             channel: self.channel,
+            url: self.url,
             ts,
         }
     }
@@ -207,6 +215,7 @@ mod tests {
             timeout_ms: 0,
             dedup_key: String::new(),
             channel: String::new(),
+            url: String::new(),
         }
         .into_message("x".into(), 1, 0)
     }
